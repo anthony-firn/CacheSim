@@ -6,6 +6,7 @@
 #define CACHESIM 1		/* Set to 1 if simulating Cache */
 
 #include <stdio.h>
+#include <stdlib.h>
 
 /*	memory management, code density, Cache emulation - statistics generation */
 /*	Generated for CSC 315 Lab 5 */
@@ -18,7 +19,10 @@ typedef struct cache_index
 	unsigned int index;
 	unsigned int offset;
 	unsigned int tag;
+	
 } address;
+
+address **cache;
 
 mem_read(int *mp)
 	{
@@ -34,7 +38,7 @@ mem_write(int *mp)
 	{
 
 	printf("Memory write to location %p\n", mp);
-
+	
 	}
 
 
@@ -90,7 +94,7 @@ void matmul( r1, c1, c2 )
 int main()
     {
     int r1, c1, r2, c2, i, j, k;
-
+	int assoc, cache_size;
     int *mp1, *mp2, *mp3;
 
     printf("Size of pointer is: %d\n\n", sizeof(mp1));
@@ -99,7 +103,15 @@ int main()
     scanf("%d%d", &r1, &c1);
     printf("Enter rows and column for second matrix: ");
     scanf("%d%d",&r2, &c2);
+	printf("Enter associativity (1, 2, or 4): ");
+	scanf("%d", &assoc);
+	printf("Enter cache size: ");
+	scanf("%d", &cache_size);
 
+	cache = calloc(assoc, sizeof(address *));
+	for (i = 0; i < assoc; i++) {
+		cache[i] = calloc(cache_size/assoc, sizeof(address));
+	}
 /* If column of first matrix in not equal to row of second matrix, asking user to enter the size of matrix again. */
     while (c1 != r2)
         {
