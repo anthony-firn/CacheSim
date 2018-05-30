@@ -14,32 +14,83 @@
 
 /* This function gets called with each "read" reference to memory */
 
-typedef struct cache_index
-{
-	unsigned int index;
-	unsigned int offset;
-	unsigned int tag;
-	
-} address;
 
-address **cache;
+
+int ***cache;
+int assoc, cache_size, hit, miss;
+float read, write;
+
+void cache_write(int *mp)
+{
+	int i, j;
+	
+	for (i = 0; i < assoc; i++) {
+		for (j = 0; j < (cache_size/assoc); j++) {
+			if (cache[i][j] == 0) {
+				//printf("storring in branch: %d, index: %d\n", i, j);
+				cache[i][j] = mp;
+
+				return;
+			}
+		}
+	}
+
+	i = rand()%assoc;
+	j = rand()%(cache_size/assoc);
+	//printf("overwriting at branch: %d, index: %d\n", i, j);
+	cache[i][j] = mp;
+}
 
 mem_read(int *mp)
-	{
+{
+	int i;
+	int j;
 
-	printf("Memory read from location %p\n", mp);
-	
+	read++;
+	//printf("Memory read from location %p\n", mp);
+
+	for (i = 0; i < assoc; i++) {
+		for (j = 0; j < (cache_size/assoc); j++) {
+			if (cache[i][j] == mp) {
+				//printf("HIT\n");
+				hit++;
+
+				return;
+			}
+		}
 	}
+
+	//printf("MISS\n");
+	miss++;
+	cache_write(mp);
+}
 
 
 /* This function gets called with each "write" reference to memory */
 
 mem_write(int *mp)
-	{
+{
+	int i;
+	int j;
 
-	printf("Memory write to location %p\n", mp);
-	
+	write++;
+	//printf("Memory write to location %p\n", mp);
+
+	for (i = 0; i < assoc; i++) {
+		for (j = 0; j < (cache_size/assoc); j++) {
+			if (cache[i][j] == mp) {
+				//printf("HIT\n");
+				hit++;
+
+				return;
+			}
+		}
 	}
+	
+	//printf("MISS\n");
+	miss++;
+	cache_write(mp);
+}
 
 
 /* Statically define the arrays a, b, and mult, where mult will become the cross product of a and b, i.e., a x b. */
@@ -94,9 +145,18 @@ void matmul( r1, c1, c2 )
 int main()
     {
     int r1, c1, r2, c2, i, j, k;
-	int assoc, cache_size;
     int *mp1, *mp2, *mp3;
-
+	for (r1=c1=r2=c2=2; r1 <= 10; r1+=8, c1+=8, r2+=8, c2+=8) {
+		for (assoc = 1; assoc <=4; assoc = assoc * 2) {
+			for (cache_size = 16; cache_size <= 256; cache_size = cache_size * 16) { 
+	hit = 0;
+	miss = 0;
+	read = 0;
+	write = 0;
+	printf("matrix size: %d x %d\n", r1, c1);
+	printf("associativity: %d\n", assoc);
+	printf("cache size: %d\n", cache_size);
+	/*
     printf("Size of pointer is: %d\n\n", sizeof(mp1));
 
     printf("Enter rows and column for first matrix: ");
@@ -107,13 +167,15 @@ int main()
 	scanf("%d", &assoc);
 	printf("Enter cache size: ");
 	scanf("%d", &cache_size);
+	*/
 
-	cache = calloc(assoc, sizeof(address *));
+	cache = calloc(assoc, sizeof(int **));
 	for (i = 0; i < assoc; i++) {
-		cache[i] = calloc(cache_size/assoc, sizeof(address));
+		cache[i] = calloc(cache_size/assoc, sizeof(int *));
 	}
+
 /* If column of first matrix in not equal to row of second matrix, asking user to enter the size of matrix again. */
-    while (c1 != r2)
+    /*while (c1 != r2)
         {
         printf("Error! column of first matrix not equal to row of second.\n");
         printf("Enter rows and column for first matrix: ");
@@ -121,10 +183,10 @@ int main()
         printf("Enter rows and column for second matrix: ");
         scanf("%d%d",&r2, &c2);
         }
-
+	*/
 /* Storing elements of first matrix. */
 
-    printf("\nEnter elements of matrix 1:\n");
+    /*printf("\nEnter elements of matrix 1:\n");*/
     for(i=0; i<r1; ++i)
     for(j=0; j<c1; ++j)
           {
@@ -135,7 +197,7 @@ int main()
           }
 
 /* Storing elements of second matrix. */
-    printf("\nEnter elements of matrix 2:\n");
+    /*printf("\nEnter elements of matrix 2:\n");*/
     for(i=0; i<r2; ++i)
     for(j=0; j<c2; ++j)
     {
@@ -150,14 +212,20 @@ int main()
 
 
 /* Displaying the multiplication of two matrix. */
-    printf("\nOutput Matrix:\n");
+    /*printf("\nOutput Matrix:\n");
     for(i=0; i<r1; ++i)
     for(j=0; j<c2; ++j)
     {
         printf("%d  ",mult[i][j]);
         if(j==c2-1)
             printf("\n\n");
-    }
+    }*/
+
+	printf("read to write access ratio: %f\n", read/write);
+	printf("hit rate: %d\n\n", (hit * 100)/(hit + miss));
+			}
+		}
+	}
     return 0;
 }
 
